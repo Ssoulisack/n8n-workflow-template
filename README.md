@@ -1,29 +1,29 @@
 # n8n Course Project
 
-โปรเจคนี้เป็นการตั้งค่า n8n พร้อมกับ PostgreSQL และ Nginx Proxy Manager สำหรับการใช้งานจริง
+This project sets up n8n with PostgreSQL and cloudflared for production use.
 
-## ระบบที่จำเป็น
+## System Requirements
 
 - Docker
 - Docker Compose
 - Git
-- [ngrok](https://ngrok.com/) (สำหรับการทดสอบ webhook)
-- [Cloudflare](https://cloudflare.com/) (สำหรับ tunnel)
+- [ngrok](https://ngrok.com/) (for webhook testing)
+- [Cloudflare](https://cloudflare.com/) (for tunnel) !!!required domain for this
 
-## การติดตั้ง
+## Installation
 
 1. Clone repository:
 ```bash
 git clone <repository-url>
-cd n8n-course
+cd n8n-workflow-template
 ```
 
-2. สร้างไฟล์ .env จาก .env.example:
+2. Create .env file from .env.example:
 ```bash
 cp .env.example .env
 ```
 
-3. แก้ไขไฟล์ .env ให้เหมาะสมกับสภาพแวดล้อมของคุณ:
+3. Edit the .env file to match your environment:
 ```env
 POSTGRES_USER=your_postgres_user
 POSTGRES_PASSWORD=your_postgres_password
@@ -31,176 +31,216 @@ N8N_ENCRYPTION_KEY=your_encryption_key
 N8N_USER_MANAGEMENT_JWT_SECRET=your_jwt_secret
 ```
 
-4. สร้างโฟลเดอร์สำหรับเก็บข้อมูล:
+4. Create directories for data storage:
 ```bash
 mkdir -p data/{n8n,postgres,npm,letsencrypt}
 ```
 
-5. รัน Docker Compose:
+5. Run Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-## การเข้าถึง
+## Access
 
 - n8n: http://localhost:5678
-- Nginx Proxy Manager Admin UI: http://localhost:81
-  - Email: admin@example.com
-  - Password: changeme (ควรเปลี่ยนหลังจาก login ครั้งแรก)
 
-## การใช้งาน ngrok สำหรับการทดสอบ Webhook
+## Using ngrok for Webhook Testing
 
-1. ติดตั้ง ngrok:
+1. Install ngrok:
 ```bash
-# macOS (ใช้ Homebrew)
+# macOS (using Homebrew)
 brew install ngrok
 
-# หรือดาวน์โหลดจาก https://ngrok.com/download
+# or download from https://ngrok.com/download
 ```
 
-2. ลงทะเบียนและตั้งค่า ngrok:
+2. Register and configure ngrok:
 ```bash
 ngrok config add-authtoken your_ngrok_auth_token
 ```
 
-3. สร้าง tunnel สำหรับ n8n:
+3. Create tunnel for n8n:
 ```bash
 ngrok http 5678
 ```
 
-4. หลังจากรันคำสั่ง ngrok จะแสดง URL ที่สามารถเข้าถึง n8n ได้จากภายนอก เช่น:
+4. After running ngrok, it will display a URL that allows external access to n8n, for example:
 ```
 Forwarding  https://xxxx-xx-xx-xxx-xx.ngrok.io -> http://localhost:5678
 ```
 
-5. ตั้งค่า Webhook URL ใน n8n:
-   - ไปที่ Settings > Workflows
-   - แก้ไข Webhook URL เป็น URL ที่ได้จาก ngrok
-   - ตัวอย่าง: `https://xxxx-xx-xx-xxx-xx.ngrok.io`
+5. Configure Webhook URL in n8n:
+   - Go to Settings > Workflows
+   - Edit Webhook URL to the URL from ngrok
+   - Example: `https://xxxx-xx-xx-xxx-xx.ngrok.io`
 
-6. อัพเดท .env file:
+6. Update .env file:
 ```env
 WEBHOOK_URL=https://xxxx-xx-xx-xxx-xx.ngrok.io
-VUE_APP_URL_BASE_API=https://xxxx-xx-xx-xxx-xx.ngrok.io/
 ```
 
-7. รีสตาร์ท n8n service:
+7. Restart n8n service:
 ```bash
 docker-compose restart n8n
 ```
 
-หมายเหตุ:
-- URL ของ ngrok จะเปลี่ยนทุกครั้งที่รันใหม่ (เว้นแต่ใช้บัญชีแบบ paid)
-- ควรใช้ ngrok เฉพาะสำหรับการทดสอบเท่านั้น
-- สำหรับการใช้งานจริง ควรใช้ domain ของตัวเองผ่าน Nginx Proxy Manager
+Note:
+- ngrok URL changes every time you restart (unless using a paid account)
+- Use ngrok only for testing purposes
+- For production use, use your own domain through Nginx Proxy Manager
 
-## การตั้งค่า Cloudflare Tunnel
+## Cloudflare Tunnel Configuration
 
-1. ติดตั้ง Cloudflare Tunnel:
-   - ไปที่ Cloudflare Zero Trust > Access > Tunnels
-   - กดปุ่ม "Create a tunnel"
-   - เลือกชื่อ tunnel และกด "Create tunnel"
+1. Install Cloudflare Tunnel:
+   - Go to Cloudflare Zero Trust > Access > Tunnels
+   - Click "Create a tunnel"
+   - Choose tunnel name and click "Create tunnel"
 
-2. ตั้งค่า Token:
-   - หลังจากสร้าง tunnel แล้ว Cloudflare จะแสดง token
-   - คัดลอก token และใส่ในไฟล์ .env:
+2. Configure Token:
+   - After creating tunnel, Cloudflare will display a token
+   - Copy the token and add it to .env file:
    ```env
    CLOUDFLARE_TOKEN=your_cloudflare_tunnel_token
    ```
 
-3. ตั้งค่า DNS:
-   - ไปที่ Cloudflare Zero Trust > Access > Tunnels
-   - เลือก tunnel ที่สร้าง
-   - กด "Configure" > "Public Hostname"
-   - เพิ่ม hostname สำหรับ n8n:
+3. Configure DNS:
+   - Go to Cloudflare Zero Trust > Access > Tunnels
+   - Select the created tunnel
+   - Click "Configure" > "Public Hostname"
+   - Add hostname for n8n:
      - Subdomain: n8n
      - Domain: your-domain.com
      - Service: http://localhost:5678
 
-4. รีสตาร์ท cloudflared service:
+4. Restart cloudflared service:
 ```bash
 docker-compose restart cloudflared
 ```
 
-หมายเหตุ:
-- Cloudflare Tunnel จะสร้าง secure connection ระหว่าง Cloudflare และ local server
-- ไม่จำเป็นต้องเปิด port 5678 ไปยังอินเตอร์เน็ต
-- สามารถเข้าถึง n8n ได้ผ่าน URL: https://n8n.your-domain.com
+Note:
+- Cloudflare Tunnel creates a secure connection between Cloudflare and local server
+- No need to open port 5678 to the internet
+- You can access n8n via URL: https://n8n.your-domain.com
 
-## โครงสร้างโปรเจค
+## Project Structure
 
 ```
 .
-├── data/                    # ข้อมูลของ Docker volumes
-│   ├── n8n/                # ข้อมูลของ n8n
-│   ├── postgres/           # ข้อมูลของ PostgreSQL
-│   ├── npm/                # ข้อมูลของ Nginx Proxy Manager
-│   └── letsencrypt/        # SSL certificates
+├── data/                    # Docker volumes data
+│   ├── n8n/                # n8n data
+│   ├── postgres/           # PostgreSQL data
 ├── docker-compose.yml      # Docker Compose configuration
 ├── .env                    # Environment variables
-├── .env.example           # ตัวอย่าง Environment variables
+├── .env.example           # Environment variables example
 └── .gitignore             # Git ignore rules
 ```
 
-## การตั้งค่า Nginx Proxy Manager
+## Data Backup
 
-1. เข้าสู่ Nginx Proxy Manager Admin UI
-2. เปลี่ยนรหัสผ่านเริ่มต้น
-3. สร้าง Proxy Host สำหรับ n8n:
-   - Domain: your-domain.com
-   - Scheme: http
-   - Forward Hostname / IP: localhost
-   - Forward Port: 5678
+All data is stored in the `data/` folder, which includes:
+- n8n data
+- PostgreSQL database
 
-## การสำรองข้อมูล
 
-ข้อมูลทั้งหมดจะถูกเก็บในโฟลเดอร์ `data/` ซึ่งประกอบด้วย:
-- ข้อมูล n8n
-- ฐานข้อมูล PostgreSQL
-- ข้อมูล Nginx Proxy Manager
-- SSL certificates
-
-## การบำรุงรักษา
-
-### การอัพเดท
+### Updates
 
 ```bash
 docker-compose pull
 docker-compose up -d
 ```
 
-### การดู logs
+### View logs
 
 ```bash
-# ดู logs ทั้งหมด
+# View all logs
 docker-compose logs -f
 
-# ดู logs เฉพาะ service
+# View specific service logs
 docker-compose logs -f n8n
 docker-compose logs -f postgres
-docker-compose logs -f npm
 ```
 
-### การหยุดการทำงาน
+### Stop services
 
 ```bash
 docker-compose down
 ```
 
-## การแก้ไขปัญหาเบื้องต้น
+## Basic Troubleshooting
 
-1. **ไม่สามารถเข้าถึง n8n ได้**
-   - ตรวจสอบว่า port 5678 ไม่ถูกใช้งาน
-   - ตรวจสอบ logs ของ n8n service
+1. **Cannot access n8n**
+   - Check that port 5678 is not being used
+   - Check n8n service logs
+   - Verify Docker containers are running: `docker-compose ps`
 
-2. **ไม่สามารถเข้าถึง Nginx Proxy Manager ได้**
-   - ตรวจสอบว่า port 81 ไม่ถูกใช้งาน
-   - ตรวจสอบ logs ของ npm service
+2. **Database not working**
+   - Check postgres service logs
+   - Check connection settings in .env file
+   - Verify PostgreSQL container is healthy: `docker-compose exec postgres pg_isready`
 
-3. **ฐานข้อมูลไม่ทำงาน**
-   - ตรวจสอบ logs ของ postgres service
-   - ตรวจสอบการเชื่อมต่อใน .env file
+3. **Cloudflared not working**
+   - Check cloudflared service status: `docker-compose ps cloudflared`
+   - View cloudflared logs: `docker-compose logs -f cloudflared`
+   - Verify token is correct in .env file
+   - Check if tunnel exists in Cloudflare dashboard:
+     - Go to Cloudflare Zero Trust > Access > Tunnels
+     - Verify tunnel status shows "Healthy"
+   - Test tunnel connection:
+     ```bash
+     # Check if cloudflared is connecting
+     docker-compose logs cloudflared | grep -i "connection"
+     
+     # Restart cloudflared service
+     docker-compose restart cloudflared
+     ```
+   - Common cloudflared issues:
+     - **Invalid token**: Check CLOUDFLARE_TOKEN in .env file
+     - **Network connectivity**: Ensure server can reach Cloudflare
+     - **Firewall blocking**: Check if outbound HTTPS (443) is allowed
+     - **DNS not propagated**: Wait for DNS changes to propagate (up to 24 hours)
+   - Verify tunnel configuration:
+     ```bash
+     # Check tunnel configuration
+     docker-compose exec cloudflared cloudflared tunnel info your-tunnel-name
+     ```
+
+4. **ngrok not working**
+   - Check if ngrok is running: `ps aux | grep ngrok`
+   - Verify auth token: `ngrok config check`
+   - Check ngrok logs for errors
+   - Ensure port 5678 is accessible: `curl http://localhost:5678`
+   - Try restarting ngrok with verbose logging: `ngrok http 5678 --log=stdout`
+
+5. **Webhook not receiving data**
+   - Verify webhook URL is correctly set in n8n
+   - Check if external URL (ngrok/Cloudflare) is accessible from outside
+   - Test webhook endpoint manually:
+     ```bash
+     curl -X POST https://your-webhook-url/webhook-test \
+          -H "Content-Type: application/json" \
+          -d '{"test": "data"}'
+     ```
+   - Check n8n workflow execution logs
+
+6. **Docker services not starting**
+   - Check Docker daemon is running: `docker info`
+   - Verify docker-compose.yml syntax: `docker-compose config`
+   - Check available disk space: `df -h`
+   - Check Docker logs: `docker-compose logs`
+   - Remove and recreate containers:
+     ```bash
+     docker-compose down
+     docker-compose up -d --force-recreate
+     ```
+
+7. **Environment variables not loading**
+   - Verify .env file exists and has correct format
+   - Check for spaces around = in .env file
+   - Restart services after .env changes:
+     ```bash
+     docker-compose down
+     docker-compose up -d
+     ```
 
 ## License
-
-MIT
