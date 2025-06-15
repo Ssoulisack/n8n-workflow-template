@@ -15,7 +15,7 @@ services:
       - N8N_RUNNERS_ENABLED=true
       - WEBHOOK_URL=${WEBHOOK_URL}
       - DB_TYPE=postgres
-      - DB_POSTGRES_HOST=postgres
+      - DB_POSTGRES_HOST=pg-vector
       - DB_POSTGRES_PORT=5432
       - DB_POSTGRES_DATABASE=${POSTGRES_DB}
       - DB_POSTGRES_USER=${POSTGRES_USER}
@@ -26,7 +26,7 @@ services:
     networks:
       - web
     depends_on:
-      - postgres
+      - pg-vector
   
   # n8n-backup:
   n8n-backup:
@@ -45,9 +45,9 @@ services:
     restart: unless-stopped
 
 
-  postgres:
-    image: postgres:15
-    container_name: postgres
+  pg-vector:
+    image: ankane/pgvector
+    container_name: pg-vector
     restart: always
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
@@ -57,6 +57,8 @@ services:
       - ./data/postgres:/var/lib/postgresql/data
     networks:
       - web
+    ports:
+    - "5432:5432"
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -67,8 +69,6 @@ services:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     networks:
       - web
-    cap_add:
-    - NET_ADMIN
 
 networks:
   web:
